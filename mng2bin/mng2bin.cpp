@@ -27,8 +27,7 @@
 #include <vector>
 #include <iterator>
 
-#define PARTITIONS_NUMBER	2
-#define PARTITION_ENTRIES	64
+#include "script.h"
 
 typedef struct {
     uint32_t pa;
@@ -42,13 +41,23 @@ typedef struct {
 } irq_table_t;
 
 typedef struct {
-    irq_table_t    irq_table[PARTITION_ENTRIES];
+    // IRQ table
+    irq_table_t    irq_table[MAX_PARTITION_ENTRIES];
     uint32_t       irq_fill;
-    memory_table_t mem_table[PARTITION_ENTRIES];
+
+    // Memory mappings table
+    memory_table_t mem_table[MAX_PARTITION_ENTRIES];
     uint32_t       mem_fill;
+
+    // Operating Sytem type
+    uint32_t       os_type;
 } partition_t;
 
-static partition_t Partitions[PARTITIONS_NUMBER];
+// Internal strcutures to store parsed script data
+static partition_t Partitions[MAX_PARTITIONS_NUMBER];
+
+// Number of partitions found in the script
+uint32_t PartsNumber;
 
 static inline int32_t CheckTokensLength(const std::vector<std::string>& LineTokens,
                                         uint32_t Length,
@@ -111,7 +120,7 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
             if (partitionId == -1)
             {
                 if (((std::istringstream(lineTokens[1]) >> partitionId) == 0) ||
-                    (partitionId >= PARTITIONS_NUMBER))
+                    (partitionId >= MAX_PARTITIONS_NUMBER))
                 {
                     std::cerr << "[error] line " << count << ": invalid partition id" << std::endl;
                     retVal = -1;
@@ -144,6 +153,18 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
             else
             {
                 partitionId = -1;
+                if (PartsNumber < MAX_PARTITIONS_NUMBER)
+                {
+                    PartsNumber++;
+                }
+                else
+                {
+                    std::cerr << "[error] line " << count << ": exceeded maximal amount of partitions" << std::endl;
+
+                    retVal = -1;
+                    break;
+                }
+
             }
         }
         else
@@ -213,7 +234,7 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
                     break;
                 }
 
-                if (Partitions[partitionId].mem_fill < PARTITION_ENTRIES)
+                if (Partitions[partitionId].mem_fill < MAX_PARTITION_ENTRIES)
                 {
                     uint32_t id = Partitions[partitionId].mem_fill++;
 
@@ -258,12 +279,51 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
                     break;
                 }
 
-                if (Partitions[partitionId].irq_fill < PARTITION_ENTRIES)
+                if (Partitions[partitionId].irq_fill < MAX_PARTITION_ENTRIES)
                 {
                     uint32_t id = Partitions[partitionId].irq_fill++;
 
                     Partitions[partitionId].irq_table[id].irq = irq;
                 }
+            }
+        }
+        else
+        if (lineTokens[0] == "os_type")
+        {
+            if (CheckTokensLength(lineTokens, 2, count))
+            {
+                retVal = -1;
+                break;
+            }
+            else
+            if (partitionId == -1)
+            {
+                std::cerr << "[error] line " << count << ": no partition section openned" << std::endl;
+                retVal = -1;
+                break;
+            }
+            else
+            {
+                uint32_t os_type;
+                std::stringstream ss;
+
+                if (lineTokens[1] == "linux")
+                {
+                    os_type = OS_LINUX;
+                }
+                else
+                if (lineTokens[1] == "freertos")
+                {
+                    os_type = OS_FREERTOS;
+                }
+                else
+                {
+                    std::cerr << "[error] line " << count << ": invalid OS identifier" << std::endl;
+                    retVal = -1;
+                    break;
+                }
+
+                Partitions[partitionId].os_type = os_type;
             }
         }
         else
@@ -278,12 +338,14 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
 
     if (retVal)
     {
+        PartsNumber = 0;
         return retVal;
     }
 
     if (partitionId != -1)
     {
         std::cerr << "[error]: partition section should be closed" << std::endl;
+        PartsNumber = 0;
         retVal = -1;
     }
 
@@ -294,7 +356,9 @@ static void Mango_ShowConfiguration()
 {
     uint32_t i;
 
-    for (i = 0; i < PARTITIONS_NUMBER; i++)
+    std::cout << "Found configuration for " << PartsNumber << " partitions:" << std::endl << std::endl;
+
+    for (i = 0; i < PartsNumber; i++)
     {
         uint32_t j;
 
@@ -314,47 +378,48 @@ static void Mango_ShowConfiguration()
         {
             std::cout << "    "  << std::hex << Partitions[i].irq_table[j].irq << std::endl;
         }
+
+        std::cout << "  OS:" << std::endl;
+        std::cout << "    " << std::hex << Partitions[i].os_type << std::endl;
     }
 }
-
-typedef struct {
-    uint32_t MemoryEntries;
-    uint32_t IRQEntries;
-    uint32_t Offset;
-} script_part_t;
-
-typedef struct {
-    uint32_t      Magic;
-    uint32_t      PartsNum;
-    uint32_t      HeaderSize;
-    script_part_t Parts[PARTITIONS_NUMBER];
-} script_header_t;
 
 static int32_t Mango_SaveConfiguration(const std::string& FileName)
 {
     std::ofstream scriptFile(FileName.c_str(), std::ios::trunc | std::ios::out | std::ios::binary);
+    script_part_t scriptParts[MAX_PARTITIONS_NUMBER];
     script_header_t scriptHeader;
     uint32_t retVal = 0;
     uint32_t offset = 0;
     uint32_t i;
 
-    scriptHeader.Magic = 0xaa10bb20;
-    scriptHeader.PartsNum = PARTITIONS_NUMBER;
-    scriptHeader.HeaderSize = sizeof(script_header_t);
+    scriptHeader.magic       = MANGO_SCRIPT_MAGIC;
+    scriptHeader.parts_num   = PartsNumber;
+    scriptHeader.header_size = sizeof(script_header_t);
+    scriptHeader.version     = MANGO_SCRIPT_VERSION;
 
-    for (i = 0; i < PARTITIONS_NUMBER; i++)
+    for (i = 0; i < PartsNumber; i++)
     {
-        scriptHeader.Parts[i].Offset = offset;
-        scriptHeader.Parts[i].MemoryEntries = Partitions[i].mem_fill;
-        scriptHeader.Parts[i].IRQEntries    = Partitions[i].irq_fill;
+        scriptParts[i].offset      = offset;
+        scriptParts[i].mem_entries = Partitions[i].mem_fill;
+        scriptParts[i].irq_entries = Partitions[i].irq_fill;
+        scriptParts[i].os_type     = Partitions[i].os_type;
 
-        offset +=  Partitions[i].mem_fill * 16;
-        offset +=  Partitions[i].irq_fill * 4;
+        offset += Partitions[i].mem_fill * sizeof(memory_table_t);
+        offset += Partitions[i].irq_fill * sizeof(irq_table_t);
     }
 
+    // Write script header
     scriptFile.write(reinterpret_cast<char*>(&scriptHeader), sizeof(script_header_t));
 
-    for (i = 0; i < PARTITIONS_NUMBER; i++)
+    // Write partitions geomentry
+    for (i = 0; i < PartsNumber; i++)
+    {
+         scriptFile.write(reinterpret_cast<char*>(&scriptParts[i]), sizeof(script_part_t));
+    }
+
+    // Write partitions raw data
+    for (i = 0; i < PartsNumber; i++)
     {
         uint32_t j;
 
@@ -397,13 +462,20 @@ int32_t main(int32_t argc, char* argv[])
         return -1;
     }
 
-    for (i = 0; i < PARTITIONS_NUMBER; i++)
+    // Invalidate partitions data
+    for (i = 0; i < MAX_PARTITIONS_NUMBER; i++)
     {
         Partitions[i].mem_fill = 0;
         Partitions[i].irq_fill = 0;
+        Partitions[i].os_type  = OS_NONE;
     }
 
-    Mango_ParseConfigFile(argv[1]);
+    PartsNumber = 0;
+
+    if (Mango_ParseConfigFile(argv[1]))
+    {
+        std::cerr << "Aborted!" << std::endl;
+    }
 
     Mango_ShowConfiguration();
 
