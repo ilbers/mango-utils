@@ -2,7 +2,7 @@
 ;
 ; Board: Banana Pi (A20)
 ;
-; Copyright (c) 2014 ilbers GmbH
+; Copyright (c) 2014-2015 ilbers GmbH
 ; Alexander Smirnov <asmirnov@ilbers.de>
 ;
 ; This program is free software; you can redistribute it and/or modify
@@ -51,7 +51,7 @@ partition 0
 	mem	0x01e40000 0x01e40000    0x20000 device	; DE_BE1
 	mem	0x01e60000 0x01e60000    0x20000 device	; DE_BE0
 	mem	0x01e80000 0x01e80000    0x20000 device	; MP
-	mem	0x40000000 0x40000000 0x20000000 normal	; SDRAM
+	mem	0x40000000 0x40000000 0x3c000000 normal	; 960MB SDRAM
 
 ; NOTE: if virtual UART is enabled, the physical region
 ;       should NOT be mapped.
@@ -91,6 +91,8 @@ partition 0
 	irq	0x6b	; GPU-PPMMU1
 	irq	0x75	; GMAC
 	irq	0x78	; TWI3
+
+	os_type	linux
 endp
 
 ; FreeRTOS
@@ -100,8 +102,10 @@ partition 1
 	;	---------------------------------------
 	mem	0x01c20000 0x01c20000     0x1000 device	; CCU, Interrupt, PIO, Timer
 	mem	0x01c82000 0x01c86000     0x2000 device	; GIC_CPU -> GIC_VCPU
-	mem	0x40000000 0x60000000 0x10000000 normal	; SDRAM
+	mem	0x40000000 0x7c000000 0x01000000 normal	; 16MB SDRAM
 
 	irq	0x1b	; Virtual Timer
+
+	os_type	freertos
 endp
 
