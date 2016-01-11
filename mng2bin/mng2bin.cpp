@@ -41,6 +41,10 @@ typedef struct {
 } irq_table_t;
 
 typedef struct {
+    uint32_t gpio;
+} gpio_table_t;
+
+typedef struct {
     // IRQ table
     irq_table_t    irq_table[MAX_PARTITION_ENTRIES];
     uint32_t       irq_fill;
@@ -48,6 +52,9 @@ typedef struct {
     // Memory mappings table
     memory_table_t mem_table[MAX_PARTITION_ENTRIES];
     uint32_t       mem_fill;
+
+    gpio_table_t   gpio_table[MAX_PARTITION_ENTRIES];
+    uint32_t       gpio_fill;
 
     // Operating Sytem type
     uint32_t       os_type;
@@ -288,6 +295,77 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
             }
         }
         else
+        if (lineTokens[0] == "gpio")
+        {
+            if (CheckTokensLength(lineTokens, 2, count))
+            {
+                retVal = -1;
+                break;
+            }
+            else
+            if (partitionId == -1)
+            {
+                std::cerr << "[error] line " << count << ": no partition section openned" << std::endl;
+                retVal = -1;
+                break;
+            }
+            else
+            {
+                uint32_t gpio, a, b;
+                size_t n;
+
+		n = lineTokens[1].find("..");
+                if (n == std::string::npos)
+                {
+                    std::stringstream ss;
+
+                    ss << std::hex << lineTokens[1];
+                    if ((ss >> a) == 0)
+                    {
+                        std::cerr << "[error] line " << count << ": invalid gpio pin number" << std::endl;
+                        retVal = -1;
+                        break;
+                    }
+                    b = a;
+                }
+                else
+                {
+                    std::stringstream ss_a;
+                    ss_a << std::hex << std::string(lineTokens[1], 0, n);
+                    if ((ss_a >> a) == 0)
+                    {
+                        std::cerr << "[error] line " << count << ": invalid gpio pin number a" << std::endl;
+                        retVal = -1;
+                        break;
+                    }
+
+                    std::stringstream ss_b;
+                    ss_b << std::hex << std::string(lineTokens[1], n + 2);
+                    if ((ss_b >> b) == 0)
+                    {
+                        std::cerr << "[error] line " << count << ": invalid gpio pin number b" << std::endl;
+                        retVal = -1;
+                        break;
+                    }
+                }
+
+                for (n = a; n <= b; n++)
+                {
+                    if (Partitions[partitionId].gpio_fill < MAX_PARTITION_ENTRIES)
+                    {
+                        uint32_t id = Partitions[partitionId].gpio_fill++;
+
+                        Partitions[partitionId].gpio_table[id].gpio = n;
+                    }
+                    else
+                    {
+                        retVal = -1;
+                        break;
+                    }
+                }
+            }
+        }
+        else
         if (lineTokens[0] == "os_type")
         {
             if (CheckTokensLength(lineTokens, 2, count))
@@ -367,16 +445,22 @@ static void Mango_ShowConfiguration()
         std::cout << "  Memory:" << std::endl;
         for (j = 0; j < Partitions[i].mem_fill; j++)
         {
-            std::cout << "    "  << std::setw(8) << std::hex << Partitions[i].mem_table[j].va;
-            std::cout << " "  << std::setw(8) << std::hex << Partitions[i].mem_table[j].pa;
-            std::cout << " "  << std::setw(8) << std::hex << Partitions[i].mem_table[j].size;
-            std::cout << " "  << std::setw(8) << std::hex << Partitions[i].mem_table[j].type << std::endl;
+            std::cout << "    " << std::setw(8) << std::hex << Partitions[i].mem_table[j].va;
+            std::cout << " " << std::setw(8) << std::hex << Partitions[i].mem_table[j].pa;
+            std::cout << " " << std::setw(8) << std::hex << Partitions[i].mem_table[j].size;
+            std::cout << " " << std::setw(8) << std::hex << Partitions[i].mem_table[j].type << std::endl;
         }
 
         std::cout << "  Interrupts:" << std::endl;
         for (j = 0; j < Partitions[i].irq_fill; j++)
         {
-            std::cout << "    "  << std::hex << Partitions[i].irq_table[j].irq << std::endl;
+            std::cout << "    " << std::hex << Partitions[i].irq_table[j].irq << std::endl;
+        }
+
+        std::cout << "  GPIO pins:" << std::endl;
+        for (j = 0; j < Partitions[i].gpio_fill; j++)
+        {
+            std::cout << "    " << std::hex << Partitions[i].gpio_table[j].gpio << std::endl;
         }
 
         std::cout << "  OS:" << std::endl;
@@ -400,13 +484,15 @@ static int32_t Mango_SaveConfiguration(const std::string& FileName)
 
     for (i = 0; i < PartsNumber; i++)
     {
-        scriptParts[i].offset      = offset;
-        scriptParts[i].mem_entries = Partitions[i].mem_fill;
-        scriptParts[i].irq_entries = Partitions[i].irq_fill;
-        scriptParts[i].os_type     = Partitions[i].os_type;
+        scriptParts[i].offset       = offset;
+        scriptParts[i].mem_entries  = Partitions[i].mem_fill;
+        scriptParts[i].irq_entries  = Partitions[i].irq_fill;
+        scriptParts[i].gpio_entries = Partitions[i].gpio_fill;
+        scriptParts[i].os_type      = Partitions[i].os_type;
 
         offset += Partitions[i].mem_fill * sizeof(memory_table_t);
         offset += Partitions[i].irq_fill * sizeof(irq_table_t);
+        offset += Partitions[i].gpio_fill * sizeof(gpio_table_t);
     }
 
     // Write script header
@@ -423,6 +509,7 @@ static int32_t Mango_SaveConfiguration(const std::string& FileName)
     {
         uint32_t j;
 
+        // Write memory entries
         for (j = 0; j < Partitions[i].mem_fill; j++)
         {
             scriptFile.write(reinterpret_cast<char*>(&Partitions[i].mem_table[j].va), 4);
@@ -431,9 +518,16 @@ static int32_t Mango_SaveConfiguration(const std::string& FileName)
             scriptFile.write(reinterpret_cast<char*>(&Partitions[i].mem_table[j].type), 4);
         }
 
+        // Write IRQ entries
         for (j = 0; j < Partitions[i].irq_fill; j++)
         {
             scriptFile.write(reinterpret_cast<char*>(&Partitions[i].irq_table[j].irq), 4);
+        }
+
+        // Write GPIO entries
+        for (j = 0; j < Partitions[i].gpio_fill; j++)
+        {
+            scriptFile.write(reinterpret_cast<char*>(&Partitions[i].gpio_table[j].gpio), 4);
         }
     }
 
@@ -467,6 +561,7 @@ int32_t main(int32_t argc, char* argv[])
     {
         Partitions[i].mem_fill = 0;
         Partitions[i].irq_fill = 0;
+        Partitions[i].gpio_fill = 0;
         Partitions[i].os_type  = OS_NONE;
     }
 

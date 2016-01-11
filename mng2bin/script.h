@@ -28,10 +28,10 @@
  */
 
 #define MANGO_SCRIPT_MAGIC	0xaa10bb20
-#define MANGO_SCRIPT_VERSION	0x04112015
+#define MANGO_SCRIPT_VERSION	0x05012016
 
 #define MAX_PARTITIONS_NUMBER	8
-#define MAX_PARTITION_ENTRIES	64
+#define MAX_PARTITION_ENTRIES	128
 
 #define OS_NONE			0x00
 #define OS_LINUX		0x10
@@ -55,6 +55,7 @@
 typedef struct {
     uint32_t mem_entries;
     uint32_t irq_entries;
+    uint32_t gpio_entries;
     uint32_t os_type;
     uint32_t offset;
 } script_part_t;

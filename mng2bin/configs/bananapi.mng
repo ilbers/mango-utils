@@ -35,7 +35,7 @@ partition 0
 	mem	0x01c18000 0x01c18000     0x1000 device	; SATA
 	mem	0x01c1b000 0x01c1b000     0x1000 device	; TVE1
 	mem	0x01c1c000 0x01c1c000     0x1000 device	; USB2
-	mem	0x01c20000 0x01c20000     0x1000 device	; CCU, Interrupt, PIO, Timer
+;	mem	0x01c20000 0x01c20000     0x1000 device	; CCU, Interrupt, PIO, Timer
 	mem	0x01c21000 0x01c21000     0x1000 device	; SPDIF, AC97, IR0, IR1
 	mem	0x01c22000 0x01c22000     0x1000 device	; IIS-1, IIS-0, LRADC 0/1, AD/DA
 	mem	0x01c23000 0x01c23000     0x1000 device	; Keypad, /, SID, SJTAG
@@ -92,6 +92,8 @@ partition 0
 	irq	0x75	; GMAC
 	irq	0x78	; TWI3
 
+	gpio	0x00..0x7c	; PA-PG pin groups
+
 	os_type	linux
 endp
 
@@ -100,11 +102,12 @@ partition 1
 	;	---------------------------------------
 	;           IPA     Physical      Size   Type 
 	;	---------------------------------------
-	mem	0x01c20000 0x01c20000     0x1000 device	; CCU, Interrupt, PIO, Timer
 	mem	0x01c82000 0x01c86000     0x2000 device	; GIC_CPU -> GIC_VCPU
 	mem	0x40000000 0x7c000000 0x01000000 normal	; 16MB SDRAM
 
 	irq	0x1b	; Virtual Timer
+
+	gpio	0x7d..0x98	; PH pin group
 
 	os_type	freertos
 endp
