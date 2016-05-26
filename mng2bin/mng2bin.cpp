@@ -58,6 +58,9 @@ typedef struct {
 
     // Operating Sytem type
     uint32_t       os_type;
+
+    // CPUs assigned to partition
+    uint32_t       cpus;
 } partition_t;
 
 // Internal strcutures to store parsed script data
@@ -167,7 +170,6 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
                 else
                 {
                     std::cerr << "[error] line " << count << ": exceeded maximal amount of partitions" << std::endl;
-
                     retVal = -1;
                     break;
                 }
@@ -405,6 +407,46 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
             }
         }
         else
+        if (lineTokens[0] == "cpus")
+        {
+            if (CheckTokensLength(lineTokens, 2, count))
+            {
+                retVal = -1;
+                break;
+            }
+            else
+            if (partitionId == -1)
+            {
+                std::cerr << "[error] line " << count << ": no partition section openned" << std::endl;
+                retVal = -1;
+                break;
+            }
+            else
+            {
+                uint32_t nr_cpus;
+                std::stringstream ss;
+
+                ss << std::hex << lineTokens[1];
+                if ((ss >> nr_cpus) == 0)
+                {
+                    std::cerr << "[error] line " << count << ": invalid CPU cores parameter" << std::endl;
+                    retVal = -1;
+                    break;
+                }
+
+                if (nr_cpus > 0)
+                {
+                    Partitions[partitionId].cpus = nr_cpus;
+                }
+                else
+                {
+                    std::cerr << "[error] line " << count << ": CPU cores parameter is 0" << std::endl;
+                    retVal = -1;
+                    break;
+                }
+            }
+        }
+        else
         {
             std::cerr << "[error] line " << count << ": invalid token" << std::endl;
             retVal = -1;
@@ -465,6 +507,9 @@ static void Mango_ShowConfiguration()
 
         std::cout << "  OS:" << std::endl;
         std::cout << "    " << std::hex << Partitions[i].os_type << std::endl;
+
+        std::cout << "  CPUs: " << std::endl;
+        std::cout << "    " << std::hex << Partitions[i].cpus << std::endl;
     }
 }
 
@@ -488,6 +533,7 @@ static int32_t Mango_SaveConfiguration(const std::string& FileName)
         scriptParts[i].mem_entries  = Partitions[i].mem_fill;
         scriptParts[i].irq_entries  = Partitions[i].irq_fill;
         scriptParts[i].gpio_entries = Partitions[i].gpio_fill;
+        scriptParts[i].cpus         = Partitions[i].cpus;
         scriptParts[i].os_type      = Partitions[i].os_type;
 
         offset += Partitions[i].mem_fill * sizeof(memory_table_t);
@@ -570,6 +616,7 @@ int32_t main(int32_t argc, char* argv[])
     if (Mango_ParseConfigFile(argv[1]))
     {
         std::cerr << "Aborted!" << std::endl;
+        return 1;
     }
 
     Mango_ShowConfiguration();
