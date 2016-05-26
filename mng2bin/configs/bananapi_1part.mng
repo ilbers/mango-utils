@@ -1,0 +1,110 @@
+; Partitions configuration script for Mango Hypervisor
+;
+; Board: Banana Pi (A20)
+;
+; Copyright (c) 2014-2015 ilbers GmbH
+; Alexander Smirnov <asmirnov@ilbers.de>
+;
+; This program is free software; you can redistribute it and/or modify
+; it under the terms of the GNU General Public License version 2
+; as published by the Free Software Foundation.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along
+; with this program; if not, write to the Free Software Foundation, Inc.,
+; 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+; Linux
+partition 0
+	cpus	2
+
+	;	---------------------------------------
+	;           IPA     Physical      Size   Type 
+	;	---------------------------------------
+	mem	0x01c00000 0x01c00000     0x1000 device	; SRAM_CTRL
+	mem	0x01c01000 0x01c01000     0x1000 device	; DRAM_CTRL
+	mem	0x01c0a000 0x01c0a000     0x1000 device	; TVE0
+	mem	0x01c0c000 0x01c0c000     0x1000 device	; LCD0
+	mem	0x01c0d000 0x01c0d000     0x1000 device	; LCD1
+	mem	0x01c0f000 0x01c0f000     0x1000 device	; MMC0
+	mem	0x01c13000 0x01c13000     0x1000 device	; USB0
+	mem	0x01c14000 0x01c14000     0x1000 device	; USB1
+	mem	0x01c16000 0x01c16000     0x1000 device	; HDMI
+	mem	0x01c18000 0x01c18000     0x1000 device	; SATA
+	mem	0x01c1b000 0x01c1b000     0x1000 device	; TVE1
+	mem	0x01c1c000 0x01c1c000     0x1000 device	; USB2
+	mem	0x01c20000 0x01c20000     0x1000 device	; CCU, Interrupt, PIO, Timer
+	mem	0x01c21000 0x01c21000     0x1000 device	; SPDIF, AC97, IR0, IR1
+	mem	0x01c22000 0x01c22000     0x1000 device	; IIS-1, IIS-0, LRADC 0/1, AD/DA
+	mem	0x01c23000 0x01c23000     0x1000 device	; Keypad, /, SID, SJTAG
+	mem	0x01c25000 0x01c25000     0x1000 device	; TP, PMU, /, CPU Config
+	mem	0x01c29000 0x01c29000     0x1000 device	; UART4-7
+	mem	0x01c2a000 0x01c2a000     0x1000 device	; PS2-0, PS2-1, /, TWI0
+	mem	0x01c2b000 0x01c2b000     0x1000 device	; TWI1, TWI2, TWI3, CAN
+	mem	0x01c40000 0x01c40000    0x10000 device	; MALI
+	mem	0x01c50000 0x01c50000    0x10000 device	; GMAC
+	mem	0x01c82000 0x01c86000     0x2000 device	; GIC_CPU -> GIC_VCPU
+	mem	0x01e00000 0x01e00000    0x20000 device	; DE_FE0
+	mem	0x01e20000 0x01e20000    0x20000 device	; DE_FE1
+	mem	0x01e40000 0x01e40000    0x20000 device	; DE_BE1
+	mem	0x01e60000 0x01e60000    0x20000 device	; DE_BE0
+	mem	0x01e80000 0x01e80000    0x20000 device	; MP
+	mem	0x40000000 0x40000000 0x3c000000 normal	; 960MB SDRAM
+
+; NOTE: if virtual UART is enabled, the physical region
+;       should NOT be mapped.
+;
+;	mem	0x01c28000 0x01c28000 0x1000 device	; UART0-3
+
+	irq	0x00	; SGI 0
+	irq	0x01	; SGI 1
+	irq	0x02	; SGI 2
+	irq	0x03	; SGI 3
+	irq	0x04	; SGI 4
+	irq	0x05	; SGI 5
+	irq	0x06	; SGI 6
+	irq	0x07	; SGI 7
+	irq	0x1b	; Virtual Timer
+	irq	0x25	; IR0
+	irq	0x27	; TWI0
+	irq	0x28	; TWI1
+	irq	0x29	; TWI2
+	irq	0x36	; Timer 0
+	irq	0x37	; Timer 1
+	irq	0x38	; Timer 2 / WD
+	irq	0x3b	; DMA
+	irq	0x3c	; PIO
+	irq	0x40	; SD/MMC0
+	irq	0x47	; USB1
+	irq	0x48	; USB2
+	irq	0x4c	; LCD0
+	irq	0x4d	; LCD1
+	irq	0x4e	; MP
+	irq	0x4f	; DE-FE0/DE-BE0
+	irq	0x50	; DE-FE1/DE-BE1
+	irq	0x55	; VE
+	irq	0x58	; SATA
+	irq	0x5c	; ACE
+	irq	0x60	; USB3
+	irq	0x61	; USB4
+	irq	0x65	; GPU-GP
+	irq	0x66	; GPU-GPMMU
+	irq	0x67	; GPU-PP0
+	irq	0x68	; GPU-PPMMU0
+	irq	0x69	; GPU-PMU
+	irq	0x6a	; GPU-PP1
+	irq	0x6b	; GPU-PPMMU1
+	irq	0x75	; GMAC
+	irq	0x78	; TWI3
+
+; NOTE: no need to assign GPIO pins, the controller
+;       is mapped to Linux partition.
+;
+;	gpio	0x00..0x98	; Pin groups
+
+	os_type	linux
+endp
