@@ -60,6 +60,8 @@ partition 0
 ;
 ;	mem	0x01c28000 0x01c28000 0x1000 device	; UART0-3
 
+	mem	0x20000000 0x7de00000 0x00200000 normal ; Mango Virtual FB
+
 	irq	0x00	; SGI 0
 	irq	0x1b	; Virtual Timer
 	irq	0x25	; IR0
@@ -109,6 +111,8 @@ partition 1
 	mem	0x01c82000 0x01c86000     0x2000 device	; GIC_CPU -> GIC_VCPU
 	mem	0x40000000 0x7c000000 0x01000000 normal	; 16MB SDRAM
 	mem	0x01c20000 0x01c20000     0x1000 device	; CCU, Interrupt, PIO, Timer
+
+	mem	0x20000000 0x7de00000 0x00200000 normal ; Mango Virtual FB
 
 	irq	0x1b	; Virtual Timer
 
