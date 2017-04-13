@@ -237,6 +237,11 @@ static int32_t Mango_ParseConfigFile(const std::string& FileName)
                     type = 1;
                 }
                 else
+                if (lineTokens[4] == "shared")
+                {
+                    type = 2;
+                }
+		else
                 {
                     std::cerr << "[error] line " << count << ": invalid memory type" << std::endl;
                     retVal = -1;
