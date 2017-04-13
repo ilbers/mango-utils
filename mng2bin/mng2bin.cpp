@@ -73,7 +73,7 @@ static inline int32_t CheckTokensLength(const std::vector<std::string>& LineToke
                                         uint32_t Length,
                                         uint32_t Line)
 {
-    uint32_t retVal = 0;
+    int32_t retVal = 0;
 
     if ((LineTokens.size() > Length) && (LineTokens[Length][0] != ';'))
     {
