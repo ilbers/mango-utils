@@ -1,0 +1,151 @@
+; Partitions configuration script for Mango Hypervisor
+;
+; Board: Banana Pi (A20)
+;
+; Copyright (c) 2017 ilbers GmbH
+; Alexander Smirnov <asmirnov@ilbers.de>
+;
+; This program is free software; you can redistribute it and/or modify
+; it under the terms of the GNU General Public License version 2
+; as published by the Free Software Foundation.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along
+; with this program; if not, write to the Free Software Foundation, Inc.,
+; 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+; Linux #1
+partition 0
+	cpus	1
+
+	;	---------------------------------------
+	;           IPA     Physical      Size   Type 
+	;	---------------------------------------
+; Memory
+	mem	0x01c00000 0x01c00000     0x1000 device	; SRAM_CTRL
+	mem	0x01c01000 0x01c01000     0x1000 device	; DRAM_CTRL
+	mem	0x40000000 0x40000000 0x20000000 normal	; 512MB SDRAM
+
+; System
+	mem	0x01c25000 0x01c25000     0x1000 device	; TP, PMU, /, CPU Config
+	mem	0x01c82000 0x01c86000     0x2000 device	; GIC_CPU -> GIC_VCPU
+
+; Video
+	mem	0x01c0c000 0x01c0c000     0x1000 device	; LCD0
+	mem	0x01c0d000 0x01c0d000     0x1000 device	; LCD1
+	mem	0x01c1b000 0x01c1b000     0x1000 device	; TVE1
+	mem	0x01c16000 0x01c16000     0x1000 device	; HDMI
+	mem	0x01c40000 0x01c40000    0x10000 device	; MALI
+	mem	0x01e20000 0x01e20000    0x20000 device	; DE_FE1
+	mem	0x01e40000 0x01e40000    0x20000 device	; DE_BE1
+	mem	0x01e80000 0x01e80000    0x20000 device	; MP
+
+; Storage
+	mem	0x01c13000 0x01c13000     0x1000 device	; USB0
+	mem	0x01c14000 0x01c14000     0x1000 device	; USB1
+	mem	0x01c1c000 0x01c1c000     0x1000 device	; USB2
+	;	---------------------------------------
+
+; System
+	irq	0x00	; SGI 0
+	irq	0x1b	; Virtual Timer
+	irq	0x36	; Timer 0
+
+; Storage
+	irq	0x47	; USB1
+	irq	0x48	; USB2
+	irq	0x60	; USB3
+	irq	0x61	; USB4
+
+; Screen 1
+	irq	0x4d	; LCD1
+	irq	0x50	; DE-FE1/DE-BE1
+	irq	0x5a	; HDMI
+
+; Mali GPU
+	irq	0x65	; GPU-GP
+	irq	0x66	; GPU-GPMMU
+	irq	0x67	; GPU-PP0
+	irq	0x68	; GPU-PPMMU0
+	irq	0x69	; GPU-PMU
+	irq	0x6a	; GPU-PP1
+	irq	0x6b	; GPU-PPMMU1
+
+	os_type	linux
+endp
+
+; Linux #2
+partition 1
+	cpus	1
+
+	;	---------------------------------------
+	;           IPA     Physical      Size   Type 
+	;	---------------------------------------
+; Memory
+	mem	0x01c00000 0x01c00000     0x1000 device	; SRAM_CTRL
+	mem	0x01c01000 0x01c01000     0x1000 device	; DRAM_CTRL
+	mem	0x60000000 0x60000000 0x1c000000 normal	; 448MB SDRAM
+	mem	0x4a000000 0x4a000000  0x1000000 shared ; 16MB for FB shared area
+
+; System
+	mem	0x01c20000 0x01c20000     0x1000 device	; CCU, Interrupt, PIO, Timer
+	mem	0x01c25000 0x01c25000     0x1000 device	; TP, PMU, /, CPU Config
+	mem	0x01c82000 0x01c86000     0x2000 device	; GIC_CPU -> GIC_VCPU
+
+; Video
+	mem	0x01c0c000 0x01c0c000     0x1000 device	; LCD0
+	mem	0x01c0a000 0x01c0a000     0x1000 device	; TVE0
+	mem	0x01c40000 0x01c40000    0x10000 device	; MALI
+	mem	0x01e00000 0x01e00000    0x20000 device	; DE_FE0
+	mem	0x01e60000 0x01e60000    0x20000 device	; DE_BE0
+	mem	0x01e80000 0x01e80000    0x20000 device	; MP
+
+; Storage
+	mem	0x01c0f000 0x01c0f000     0x1000 device	; MMC0
+	mem	0x01c18000 0x01c18000     0x1000 device	; SATA
+
+; Multimedia
+	mem	0x01c21000 0x01c21000     0x1000 device	; SPDIF, AC97, IR0, IR1
+	mem	0x01c22000 0x01c22000     0x1000 device	; IIS-1, IIS-0, LRADC 0/1, AD/DA
+	mem	0x01c23000 0x01c23000     0x1000 device	; Keypad, /, SID, SJTAG
+	mem	0x01c29000 0x01c29000     0x1000 device	; UART4-7
+	mem	0x01c2a000 0x01c2a000     0x1000 device	; PS2-0, PS2-1, /, TWI0
+	mem	0x01c2b000 0x01c2b000     0x1000 device	; TWI1, TWI2, TWI3, CAN
+
+; Networking
+	mem	0x01c50000 0x01c50000    0x10000 device	; GMAC
+	;	---------------------------------------
+
+; System
+	irq	0x00	; SGI 0
+	irq	0x1b	; Virtual Timer
+	irq	0x37	; Timer 1
+	irq	0x38	; Timer 2 / WD
+
+	irq	0x3b	; DMA
+	irq	0x3c	; PIO
+
+; Screen 0
+	irq	0x4c	; LCD0
+	irq	0x4e	; MP
+	irq	0x4f	; DE-FE0/DE-BE0
+	irq	0x55	; VE
+	irq	0x5c	; ACE
+
+; Periph
+	irq	0x27	; TWI0
+	irq	0x28	; TWI1
+	irq	0x78	; TWI3
+	irq	0x29	; TWI2
+	irq	0x40	; SD/MMC0
+	irq	0x75	; GMAC
+	irq	0x25	; IR0
+	irq	0x58	; SATA
+
+	os_type	linux
+endp
+
